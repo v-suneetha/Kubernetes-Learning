@@ -1,0 +1,279 @@
+Kubernetes Service Types - Quick Notes 
+
+1. ClusterIP (Default Service) 
+
+Purpose 
+
+Exposes the application only inside the Kubernetes cluster. 
+
+How to get ClusterIP 
+
+kubectl get svc 
+ 
+
+Example: 
+
+NAME         TYPE        CLUSTER-IP 
+my-service   ClusterIP   10.104.108.138 
+ 
+
+How to test 
+
+SSH into Minikube: 
+
+minikube ssh 
+ 
+
+Access Service: 
+
+curl http://10.104.108.138:80/demo 
+ 
+
+Traffic Flow 
+
+Client Inside Cluster 
+       ↓ 
+ClusterIP:80 
+       ↓ 
+TargetPort:8000 
+       ↓ 
+Pod 
+ 
+
+Important 
+
+ClusterIP = Service Testing 
+Pod IP     = Pod Testing 
+ 
+
+Example Pod Test: 
+
+curl http://10.244.0.6:8000/demo 
+ 
+
+This bypasses the Service completely. 
+
+ 
+
+2. NodePort 
+
+Purpose 
+
+Exposes the application on a Kubernetes Node. 
+
+How to get Node IP 
+
+minikube ip 
+ 
+
+Example: 
+
+192.168.49.2 
+ 
+
+How to get NodePort 
+
+kubectl get svc 
+ 
+
+Example: 
+
+NAME              TYPE       PORT(S) 
+my-service-node   NodePort   80:30007/TCP 
+ 
+
+Where: 
+
+Service Port = 80 
+NodePort     = 30007 
+ 
+
+How to test 
+
+curl http://192.168.49.2:30007/demo 
+ 
+
+Traffic Flow 
+
+NodeIP:30007 
+       ↓ 
+Service:80 
+       ↓ 
+TargetPort:8000 
+       ↓ 
+Pod 
+ 
+
+ 
+
+3. LoadBalancer 
+
+Purpose 
+
+Exposes the application externally using a cloud provider load balancer. 
+
+Used in: 
+
+Amazon EKS 
+
+Azure Kubernetes Service 
+
+Google Kubernetes Engine 
+
+How to get LoadBalancer IP 
+
+kubectl get svc 
+ 
+
+Example: 
+
+NAME              TYPE           EXTERNAL-IP 
+my-service-load   LoadBalancer   54.x.x.x 
+ 
+
+or 
+
+my-service-load   LoadBalancer   abc123.elb.amazonaws.com 
+ 
+
+How to test 
+
+curl http://<external-ip>/demo 
+ 
+
+Traffic Flow 
+
+Public IP / DNS 
+       ↓ 
+Load Balancer 
+       ↓ 
+Service 
+       ↓ 
+Pod 
+ 
+
+ 
+
+4. LoadBalancer in Minikube 
+
+Problem 
+
+kubectl get svc 
+ 
+
+Shows: 
+
+EXTERNAL-IP   <pending> 
+ 
+
+Reason 
+
+Minikube has no cloud provider to create a real Load Balancer. 
+
+Solution 
+
+Run: 
+
+minikube tunnel 
+ 
+
+Then: 
+
+kubectl get svc 
+ 
+
+Example: 
+
+NAME              TYPE           CLUSTER-IP       EXTERNAL-IP 
+my-service-load   LoadBalancer   10.100.156.52    10.100.156.52 
+ 
+
+How to get LoadBalancer IP in Minikube 
+
+kubectl get svc 
+ 
+
+Read the EXTERNAL-IP column. 
+
+Example: 
+
+10.100.156.52 
+ 
+
+How to test 
+
+From Minikube/cluster network: 
+
+curl http://10.100.156.52:80/demo 
+ 
+
+Important 
+
+This is not a real public IP. 
+
+minikube tunnel simulates LoadBalancer behavior locally. 
+
+ 
+
+Useful Commands 
+
+Get Pods 
+
+kubectl get pods -o wide 
+ 
+
+Shows: 
+
+POD IP 
+ 
+
+Example: 
+
+10.244.0.6 
+ 
+
+ 
+
+Get Services 
+
+kubectl get svc 
+ 
+
+Shows: 
+
+CLUSTER-IP 
+EXTERNAL-IP 
+PORTS 
+ 
+
+ 
+
+Get Node IP 
+
+minikube ip 
+ 
+
+Example: 
+
+192.168.49.2 
+ 
+
+ 
+
+Easy Memory Trick 
+
+Pod IP 
+↓ 
+Tests Pod directly 
+ 
+ClusterIP 
+↓ 
+Tests Service inside cluster 
+ 
+NodeIP + NodePort 
+↓ 
+Tests Service through node 
+ 
+LoadBalancer IP 
+↓ 
+Tests Service from outside world
